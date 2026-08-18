@@ -58,6 +58,27 @@
 - **封闭平台**：小红书、抖音 / TikTok、B 站、Instagram 在目录里 **0 个**，直接探测其
   `/rss` 路径也全是 HTML 或 404；X 有 198 个条目，活着 4 个；播客 34 个，活着 34 个
 
+## 怎么复现
+
+```bash
+bash scripts/run.sh        # 约 2 分钟，绝大部分时间在等 932 个远端订阅源
+```
+
+| 步骤 | 产出 | 做什么 |
+|---|---|---|
+| `1_fetch_catalog.py` | `data/feeds.json` | 翻页拉全量目录（`/api/discovery/feeds` 未鉴权） |
+| `2_probe.py` | `data/probe.json` | 40 并发抓每一个源，记录 HTTP 状态和最新条目日期 |
+| `3_formats.py` | `data/formats.json` | 对返回 200 的重抓一遍，解析格式 / 条目数 / 正文长度 / 缓存头 |
+| `4_build.py` | `data/flame_data.json` | 归类到 8 种生产方式，建 目录→方式→主机→源 四层树 |
+| `5_render.py` | `index.html` | 把数据内联进单文件页面 |
+
+`scripts/analysis/` 是 README 里各个数字的出处（漏斗、格式分布、封闭平台探测、RSSHub 复查）。
+`scripts/test_render.py` 用 headless Chrome 驱动下钻 / 搜索 / 切换口径，验证页面交互没坏。
+
+`data/` 不入库：它是某一时刻活体网络的快照，重跑必然和 `index.html` 里那一份不同。
+**这种差异本身就是结论**——比如相隔 90 分钟的两次探测里，「平台原生接口」的存活率从 81.5% 掉到约 30%，
+只因为 YouTube 和 Reddit 对并发探测限了流。当前页面用的是 2026-08-18 03:07 UTC 那一次。
+
 ## 数据怎么来的
 
 `ifeed.cc` 的 `/api/discovery/*` 接口未鉴权，翻页取全量目录，再逐个真实抓取解析。

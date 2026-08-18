@@ -1,0 +1,3 @@
+# Probe output. Regenerate with scripts/run.sh — it is a snapshot of a live
+# network, so a fresh run will legitimately differ from the one in index.html.
+data/
